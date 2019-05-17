@@ -114,7 +114,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                 e.player.sendMessage("You failed to download the resource pack for some reason.".red())
                 e.player.sendMessage("Type ".red() + "/mcmoji resourcepack".gold() + " to try again.")
                 noSend += e.player.uniqueId
-                if (config.`resource-pack` == TODO()) {
+                if (config.`resource-pack` == "https://github.com/pie-flavor/mcmoji/raw/master/mcmoji_pack.zip") {
                     e.player.sendMessage("If this is a persistent issue, notify pie_flavor#7868 on Discord.".red())
                 } else {
                     e.player.sendMessage("If this is a persistent issue, notify an admin.".red())
