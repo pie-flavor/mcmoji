@@ -6,6 +6,7 @@ plugins {
     kotlin("jvm") version "1.3.31"
     kotlin("kapt") version "1.3.31"
     id("com.github.johnrengelman.shadow") version "5.0.0"
+    id("flavor.pie.promptsign") version "1.1.0"
 }
 
 group = "flavor.pie"
