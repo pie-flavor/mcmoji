@@ -64,6 +64,10 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             filenamesAsset.copyToDirectory(dir)
         }
         config = configLoader.load().getValue(TypeToken.of(Config::class.java))!!
+        if (config.version < 2) {
+            config.version = 2
+            configLoader.save(configLoader.createEmptyNode().setValue(TypeToken.of(Config::class.java), config))
+        }
         val map = mutableMapOf<String, EmojiMap>()
         Files.newDirectoryStream(dir, "*.json").use {
             for (file in it) {
