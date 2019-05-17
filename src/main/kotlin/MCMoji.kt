@@ -2,6 +2,7 @@
 
 package flavor.pie.mcmoji
 
+import com.google.common.collect.HashMultimap
 import com.google.common.reflect.TypeToken
 import flavor.pie.kludge.*
 import ninja.leaping.configurate.commented.CommentedConfigurationNode
@@ -18,6 +19,7 @@ import org.spongepowered.api.config.DefaultConfig
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.Order
+import org.spongepowered.api.event.command.TabCompleteEvent
 import org.spongepowered.api.event.entity.living.humanoid.player.ResourcePackStatusEvent
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent
@@ -43,6 +45,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
     companion object {
         val emojiMap: Map<String, Char> get() = emoji.toMap()
         private val emoji: MutableMap<String, Char> = mutableMapOf()
+        private val byFirstTwo: HashMultimap<String, String> = HashMultimap.create()
         private lateinit var config: Config
         private val noSend: MutableSet<UUID> = mutableSetOf()
         val noEmoji: Set<UUID> get() = noSend.toSet()
@@ -87,6 +90,11 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
         while (map.isNotEmpty()) {
             load(map.keys.first())
         }
+        for ((key, _) in emoji) {
+            if (key.length > 1) {
+                byFirstTwo.put(key.substring(0..1), key)
+            }
+        }
     }
 
     @[PublishedApi Listener]
@@ -103,8 +111,10 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
 
     @[PublishedApi Listener]
     internal fun onJoin(e: ClientConnectionEvent.Join) {
-        delay(1) {
-            e.targetEntity.sendResourcePack(ResourcePacks.fromUri(URI(config.`resource-pack`)))
+        if (config.`send-pack`) {
+            delay(1) {
+                e.targetEntity.sendResourcePack(ResourcePacks.fromUri(URI(config.`resource-pack`)))
+            }
         }
     }
 
@@ -147,6 +157,26 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             }
         }
         e.formatter.setBody(message.text())
+    }
+
+    @[PublishedApi Listener]
+    internal fun onTabComplete(e: TabCompleteEvent) {
+        if (e.tabCompletions.isNotEmpty()) {
+            return
+        }
+        val arg = if (e.rawMessage.contains(' ')) { e.rawMessage.substring(e.rawMessage.lastIndexOf(' ') + 1) } else { e.rawMessage }
+        if (arg.count { it == ':' } % 2 == 1) {
+            val name = arg.substring(arg.lastIndexOf(':') + 1)
+            if (name.all { it.isLetterOrDigit() || it == '_' || it == '-' }) {
+                val possibilities = byFirstTwo[name.substring(0..1)].filter { it.startsWith(name) }
+                val narrowed = possibilities.map { it to emoji[it]!! }.sortedBy { it.first.length }.distinctBy { it.second }
+                if (narrowed.isNotEmpty()) {
+                    val splitPoint = arg.substring(0..(arg.lastIndexOf(':')))
+                    val suggestions = narrowed.map { splitPoint + it.first + ':' }
+                    e.tabCompletions.addAll(suggestions)
+                }
+            }
+        }
     }
 
     private fun onResourcepack(src: CommandSource, args: CommandContext): CommandResult {
