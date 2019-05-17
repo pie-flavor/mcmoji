@@ -31,7 +31,7 @@ import java.nio.file.Path
 import java.util.UUID
 import javax.inject.Inject
 
-@Plugin(id = "mcmoji", name = "MCMoji", version = "1.0-SNAPSHOT", description = "Adds emoji to Minecraft.", authors = ["pie_flavor"])
+@Plugin(id = "mcmoji", name = "MCMoji", version = "1.0", description = "Adds emoji to Minecraft.", authors = ["pie_flavor"])
 class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir: Path,
                                  @DefaultConfig(sharedRoot = false) private val configPath: Path,
                                  @DefaultConfig(sharedRoot = false) private val configLoader: ConfigurationLoader<CommentedConfigurationNode>,
