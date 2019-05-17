@@ -40,7 +40,8 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                                  @AssetId("alternates.json") private val alternatesAsset: Asset,
                                  @AssetId("characters.json") private val charactersAsset: Asset,
                                  @AssetId("filenames.json") private val filenamesAsset: Asset,
-                                 @AssetId("default.conf") private val configAsset: Asset) {
+                                 @AssetId("default.conf") private val configAsset: Asset,
+                                 @AssetId("gun.alt.json") private val gunAltAsset: Asset) {
 
     companion object {
         val emojiMap: Map<String, Char> get() = emoji.toMap()
@@ -62,15 +63,20 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             alternatesAsset.copyToDirectory(dir)
             charactersAsset.copyToDirectory(dir)
             filenamesAsset.copyToDirectory(dir)
+            gunAltAsset.copyToDirectory(dir)
         }
         config = configLoader.load().getValue(TypeToken.of(Config::class.java))!!
         if (config.version < 2) {
             config.version = 2
             configLoader.save(configLoader.createEmptyNode().setValue(TypeToken.of(Config::class.java), config))
+            gunAltAsset.copyToDirectory(dir)
         }
         val map = mutableMapOf<String, EmojiMap>()
         Files.newDirectoryStream(dir, "*.json").use {
             for (file in it) {
+                if (".alt.json" in file.fileName.toString() && file.fileName.toString().substringBefore('.') !in config.alts) {
+                    continue
+                }
                 val emojiMap = GsonConfigurationLoader.builder().setPath(file).build().load().getValue(TypeToken.of(EmojiMap::class.java))!!
                 map[file.fileName.toString()] = emojiMap
             }
@@ -80,17 +86,18 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             emojimap.references.let {
                 if (it.isNullOrEmpty()) {
                     for ((key, value) in emojimap.map) {
-                        emoji[key] = value.toInt().toChar()
+                        emoji.computeIfAbsent(key) { value.toInt().toChar() }
                     }
                 } else {
                     load(it)
                     for ((key, value) in emojimap.map) {
-                        emoji[key] = emoji[value]!!
+                        emoji.computeIfAbsent(key) { emoji[value]!! }
                     }
                 }
             }
             map -= name
         }
+        map.keys.filter { it.endsWith(".alt.json") }.forEach { load(it) }
         while (map.isNotEmpty()) {
             load(map.keys.first())
         }

@@ -8,6 +8,7 @@ class Config {
     @Setting var version: Int = 2
     @Setting var `resource-pack`: String = "https://github.com/pie-flavor/mcmoji/raw/master/mcmoji_pack.zip"
     @Setting var `send-pack`: Boolean = true
+    @Setting var alts: List<String> = listOf()
 }
 
 @ConfigSerializable
