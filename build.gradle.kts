@@ -48,3 +48,10 @@ tasks.named<ShadowJar>("shadowJar") {
     relocate("kotlin", "flavor.pie.mcmoji.runtime.kotlin")
 }
 
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
+tasks.named<Task>("build") {
+    dependsOn(tasks.named("shadowJar"))
+}

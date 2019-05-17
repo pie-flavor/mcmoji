@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_PARAMETER")
+
 package flavor.pie.mcmoji
 
 import com.google.common.reflect.TypeToken
@@ -69,7 +71,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
         fun load(name: String) {
             val emojimap = map[name]!!
             emojimap.references.let {
-                if (it == null) {
+                if (it.isNullOrEmpty()) {
                     for ((key, value) in emojimap.map) {
                         emoji[key] = value.toInt().toChar()
                     }
@@ -80,6 +82,10 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                     }
                 }
             }
+            map -= name
+        }
+        while (map.isNotEmpty()) {
+            load(map.keys.first())
         }
     }
 
@@ -121,10 +127,11 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                 }
             }
             ResourcePackStatusEvent.ResourcePackStatus.SUCCESSFULLY_LOADED -> noSend -= e.player.uniqueId
+            else -> {}
         }
     }
 
-    val regex = """:([A-Za-z0-9-_])+:""".toRegex()
+    private val regex = """:([A-Za-z0-9-_]+):""".toRegex()
 
     @[PublishedApi Listener(order = Order.PRE)]
     internal fun onChat(e: MessageChannelEvent.Chat) {
