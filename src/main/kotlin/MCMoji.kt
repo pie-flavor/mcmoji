@@ -138,6 +138,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             description("Attempts to download the resource pack.".text())
         }
         val reload = commandSpecOf {
+            permission(Permissions.RELOAD)
             executor(::onReload)
             description("Reloads the configuration.".text())
         }
