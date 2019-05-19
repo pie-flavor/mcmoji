@@ -22,6 +22,10 @@ repositories {
         name = "jitpack"
         url = URI("https://jitpack.io/")
     }
+    maven {
+        name = "bstats"
+        url = URI("https://repo.codemc.org/repository/maven-public")
+    }
 }
 
 val shadow by configurations.named("shadow")
@@ -36,6 +40,9 @@ dependencies {
     val kludge = "com.github.pie-flavor:kludge:477392a"
     shadow(kludge)
     implementation(kludge)
+    val bstats = "org.bstats:bstats-sponge-lite:1.4"
+    shadow(bstats)
+    implementation(bstats)
 }
 
 tasks.withType<KotlinCompile> {

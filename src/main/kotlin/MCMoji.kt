@@ -8,6 +8,7 @@ import flavor.pie.kludge.*
 import ninja.leaping.configurate.commented.CommentedConfigurationNode
 import ninja.leaping.configurate.gson.GsonConfigurationLoader
 import ninja.leaping.configurate.loader.ConfigurationLoader
+import org.bstats.sponge.MetricsLite2
 import org.spongepowered.api.asset.Asset
 import org.spongepowered.api.asset.AssetId
 import org.spongepowered.api.command.CommandException
@@ -42,7 +43,8 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                                  @AssetId("characters.json") private val charactersAsset: Asset,
                                  @AssetId("filenames.json") private val filenamesAsset: Asset,
                                  @AssetId("default.conf") private val configAsset: Asset,
-                                 @AssetId("gun.alt.json") private val gunAltAsset: Asset) {
+                                 @AssetId("gun.alt.json") private val gunAltAsset: Asset,
+                                 metrics: MetricsLite2) {
 
     companion object {
         const val PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/f17ec74695bd618bf3b57d7d7b2b91f35c1d8c1d/mcmoji_pack.zip"
@@ -78,7 +80,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
         val config = configLoader.load().getValue(TypeToken.of(Config::class.java))!!
         if (config.version < 2) {
             config.version = 2
-            if (config.`resource-pack` == PACK_URL) {
+            if (config.`resource-pack` == "https://github.com/pie-flavor/mcmoji/raw/master/mcmoji_pack.zip") {
                 config.`resource-pack` = ""
             }
             configLoader.save(configLoader.createEmptyNode().setValue(TypeToken.of(Config::class.java), config))
