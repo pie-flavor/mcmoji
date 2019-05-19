@@ -21,6 +21,7 @@ import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.Order
 import org.spongepowered.api.event.command.TabCompleteEvent
 import org.spongepowered.api.event.entity.living.humanoid.player.ResourcePackStatusEvent
+import org.spongepowered.api.event.game.GameReloadEvent
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent
 import org.spongepowered.api.event.message.MessageChannelEvent
@@ -44,10 +45,13 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                                  @AssetId("gun.alt.json") private val gunAltAsset: Asset) {
 
     companion object {
+        const val PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/f17ec74695bd618bf3b57d7d7b2b91f35c1d8c1d/mcmoji_pack.zip"
         val emojiMap: Map<String, Char> get() = emoji.toMap()
         private val emoji: MutableMap<String, Char> = mutableMapOf()
         private val byFirstTwo: HashMultimap<String, String> = HashMultimap.create()
-        private lateinit var config: Config
+        private lateinit var packUrl: String
+        private var sendResourcePack: Boolean = false
+        private var customPack: Boolean = false
         private val noSend: MutableSet<UUID> = mutableSetOf()
         val noEmoji: Set<UUID> get() = noSend.toSet()
     }
@@ -58,6 +62,12 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
 
     @[PublishedApi Listener]
     internal fun preInit(e: GamePreInitializationEvent) {
+        loadConfig()
+    }
+
+    private fun loadConfig() {
+        emoji.clear()
+        byFirstTwo.clear()
         if (!Files.exists(configPath)) {
             configAsset.copyToFile(configPath)
             alternatesAsset.copyToDirectory(dir)
@@ -65,12 +75,18 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             filenamesAsset.copyToDirectory(dir)
             gunAltAsset.copyToDirectory(dir)
         }
-        config = configLoader.load().getValue(TypeToken.of(Config::class.java))!!
+        val config = configLoader.load().getValue(TypeToken.of(Config::class.java))!!
         if (config.version < 2) {
             config.version = 2
+            if (config.`resource-pack` == PACK_URL) {
+                config.`resource-pack` = ""
+            }
             configLoader.save(configLoader.createEmptyNode().setValue(TypeToken.of(Config::class.java), config))
             gunAltAsset.copyToDirectory(dir)
         }
+        packUrl = if (config.`resource-pack` == "") { PACK_URL } else { config.`resource-pack` }
+        customPack = config.`resource-pack` == ""
+        sendResourcePack = config.`send-pack`
         val map = mutableMapOf<String, EmojiMap>()
         Files.newDirectoryStream(dir, "*.json").use {
             for (file in it) {
@@ -109,22 +125,32 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
     }
 
     @[PublishedApi Listener]
+    internal fun reload(e: GameReloadEvent) {
+        loadConfig()
+    }
+
+    @[PublishedApi Listener]
     internal fun init(e: GameInitializationEvent) {
         val resourcepack = commandSpecOf {
             executor(::onResourcepack)
             description("Attempts to download the resource pack.".text())
         }
+        val reload = commandSpecOf {
+            executor(::onReload)
+            description("Reloads the configuration.".text())
+        }
         val base = commandSpecOf {
             child(resourcepack, "resourcepack")
+            child(reload, "reload")
         }
         CommandManager.register(this, base, "mcmoji")
     }
 
     @[PublishedApi Listener]
     internal fun onJoin(e: ClientConnectionEvent.Join) {
-        if (config.`send-pack`) {
+        if (sendResourcePack) {
             delay(1) {
-                e.targetEntity.sendResourcePack(ResourcePacks.fromUri(URI(config.`resource-pack`)))
+                e.targetEntity.sendResourcePack(ResourcePacks.fromUri(URI(packUrl)))
             }
         }
     }
@@ -141,7 +167,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                 e.player.sendMessage("You failed to download the resource pack for some reason.".red())
                 e.player.sendMessage("Type ".red() + "/mcmoji resourcepack".gold() + " to try again.")
                 noSend += e.player.uniqueId
-                if (config.`resource-pack` == "https://github.com/pie-flavor/mcmoji/raw/master/mcmoji_pack.zip") {
+                if (customPack) {
                     e.player.sendMessage("If this is a persistent issue, notify pie_flavor#7868 on Discord.".red())
                 } else {
                     e.player.sendMessage("If this is a persistent issue, notify an admin.".red())
@@ -194,7 +220,13 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
         if (src !is Player) {
             throw CommandException("You must be a player!".red())
         }
-        src.sendResourcePack(ResourcePacks.fromUri(URI(config.`resource-pack`)))
+        src.sendResourcePack(ResourcePacks.fromUri(URI(packUrl)))
+        return CommandResult.success()
+    }
+
+    private fun onReload(src: CommandSource, args: CommandContext): CommandResult {
+        loadConfig()
+        src.sendMessage("Successfully reloaded configs.".green())
         return CommandResult.success()
     }
 
