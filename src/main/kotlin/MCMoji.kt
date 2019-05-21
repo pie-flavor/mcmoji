@@ -2,6 +2,7 @@
 
 package flavor.pie.mcmoji
 
+import com.google.common.collect.HashBiMap
 import com.google.common.collect.HashMultimap
 import com.google.common.reflect.TypeToken
 import flavor.pie.kludge.*
@@ -47,14 +48,17 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                                  metrics: MetricsLite2) {
 
     companion object {
-        const val PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/f17ec74695bd618bf3b57d7d7b2b91f35c1d8c1d/mcmoji_pack.zip"
+        const val STATIC_PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/e62ae0e3bc0a1b17978bbdc4930733887e547d07/pack/mcmoji_pack_v1.zip"
+        const val DYNAMIC_PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/master/pack/mcmoji_pack_v1.zip"
         val emojiMap: Map<String, Char> get() = emoji.toMap()
         private val emoji: MutableMap<String, Char> = mutableMapOf()
         private val byFirstTwo: HashMultimap<String, String> = HashMultimap.create()
+        private val byFirstRegisteredId: HashBiMap<String, Char> = HashBiMap.create()
         private lateinit var packUrl: String
         private var sendResourcePack: Boolean = false
         private var customPack: Boolean = false
         private val noSend: MutableSet<UUID> = mutableSetOf()
+        private var usePermissions: Boolean = false
         val noEmoji: Set<UUID> get() = noSend.toSet()
     }
 
@@ -78,17 +82,26 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             gunAltAsset.copyToDirectory(dir)
         }
         val config = configLoader.load().getValue(TypeToken.of(Config::class.java))!!
-        if (config.version < 2) {
-            config.version = 2
-            if (config.`resource-pack` == "https://github.com/pie-flavor/mcmoji/raw/master/mcmoji_pack.zip") {
-                config.`resource-pack` = ""
+        if (config.version < 3) {
+            if (config.version < 2) {
+                if (config.`resource-pack` == "https://github.com/pie-flavor/mcmoji/raw/master/mcmoji_pack.zip") {
+                    config.`resource-pack` = ""
+                }
             }
             configLoader.save(configLoader.createEmptyNode().setValue(TypeToken.of(Config::class.java), config))
-            gunAltAsset.copyToDirectory(dir)
         }
-        packUrl = if (config.`resource-pack` == "") { PACK_URL } else { config.`resource-pack` }
+        packUrl = if (config.`resource-pack` == "") {
+            if (config.`pack-fetch-kind` == FetchKind.DYNAMIC) {
+                DYNAMIC_PACK_URL
+            } else {
+                STATIC_PACK_URL
+            }
+        } else {
+            config.`resource-pack`
+        }
         customPack = config.`resource-pack` == ""
         sendResourcePack = config.`send-pack`
+        usePermissions = config.`enable-permissions`
         val map = mutableMapOf<String, EmojiMap>()
         Files.newDirectoryStream(dir, "*.json").use {
             for (file in it) {
@@ -105,6 +118,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                 if (it.isNullOrEmpty()) {
                     for ((key, value) in emojimap.map) {
                         emoji.computeIfAbsent(key) { value.toInt().toChar() }
+                        byFirstRegisteredId.inverse().putIfAbsent(value.toInt().toChar(), key)
                     }
                 } else {
                     load(it)
@@ -192,7 +206,9 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             if (name != null) {
                 val replacement = emoji[name.value]
                 if (replacement != null) {
-                    message = message.replace(":${name.value}:", replacement.toString())
+                    if (!usePermissions || (e.cause.root() as? Player)?.hasPermission("mcmoji.emoji.${byFirstRegisteredId.inverse()[replacement]!!}") == true) {
+                        message = message.replace(":${name.value}:", replacement.toString())
+                    }
                 }
             }
         }

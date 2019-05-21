@@ -9,6 +9,12 @@ class Config {
     @Setting var `resource-pack`: String = ""
     @Setting var `send-pack`: Boolean = true
     @Setting var alts: List<String> = listOf()
+    @Setting var `enable-permissions` = false
+    @Setting var `pack-fetch-kind` = FetchKind.DYNAMIC
+}
+
+enum class FetchKind {
+    DYNAMIC, STATIC
 }
 
 @ConfigSerializable
