@@ -48,7 +48,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                                  metrics: MetricsLite2) {
 
     companion object {
-        const val STATIC_PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/e62ae0e3bc0a1b17978bbdc4930733887e547d07/pack/mcmoji_pack_v1.zip"
+        const val STATIC_PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/76e30d42d0fce4f76b93097c856f5e176320589a/pack/mcmoji_pack_v1.zip"
         const val DYNAMIC_PACK_URL = "https://github.com/pie-flavor/mcmoji/raw/master/pack/mcmoji_pack_v1.zip"
         val emojiMap: Map<String, Char> get() = emoji.toMap()
         private val emoji: MutableMap<String, Char> = mutableMapOf()
