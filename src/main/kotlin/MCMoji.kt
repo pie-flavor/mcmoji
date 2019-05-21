@@ -2,7 +2,6 @@
 
 package flavor.pie.mcmoji
 
-import com.google.common.collect.HashBiMap
 import com.google.common.collect.HashMultimap
 import com.google.common.reflect.TypeToken
 import flavor.pie.kludge.*
@@ -53,7 +52,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
         val emojiMap: Map<String, Char> get() = emoji.toMap()
         private val emoji: MutableMap<String, Char> = mutableMapOf()
         private val byFirstTwo: HashMultimap<String, String> = HashMultimap.create()
-        private val byFirstRegisteredId: HashBiMap<String, Char> = HashBiMap.create()
+        private val byFirstRegisteredId: MutableMap<Char, String> = mutableMapOf()
         private lateinit var packUrl: String
         private var sendResourcePack: Boolean = false
         private var customPack: Boolean = false
@@ -118,7 +117,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
                 if (it.isNullOrEmpty()) {
                     for ((key, value) in emojimap.map) {
                         emoji.computeIfAbsent(key) { value.toInt().toChar() }
-                        byFirstRegisteredId.inverse().putIfAbsent(value.toInt().toChar(), key)
+                        byFirstRegisteredId.putIfAbsent(value.toInt().toChar(), key)
                     }
                 } else {
                     load(it)
@@ -206,7 +205,7 @@ class MCMoji @Inject constructor(@ConfigDir(sharedRoot = false) private val dir:
             if (name != null) {
                 val replacement = emoji[name.value]
                 if (replacement != null) {
-                    if (!usePermissions || (e.cause.root() as? Player)?.hasPermission("mcmoji.emoji.${byFirstRegisteredId.inverse()[replacement]!!}") == true) {
+                    if (!usePermissions || (e.cause.root() as? Player)?.hasPermission("mcmoji.emoji.${byFirstRegisteredId[replacement]!!}") == true) {
                         message = message.replace(":${name.value}:", replacement.toString())
                     }
                 }
