@@ -7,6 +7,7 @@ plugins {
     kotlin("kapt") version "1.3.31"
     id("com.github.johnrengelman.shadow") version "5.0.0"
     id("flavor.pie.promptsign") version "1.1.0"
+    id("maven-publish")
 }
 
 group = "flavor.pie"
@@ -62,4 +63,12 @@ tasks.named<Jar>("jar") {
 
 tasks.named<Task>("build") {
     dependsOn(tasks.named("shadowJar"))
+}
+
+publishing {
+    publications {
+        create("plugin", MavenPublication::class.java) {
+            project.shadow.component(this)
+        }
+    }
 }
