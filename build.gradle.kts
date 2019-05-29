@@ -1,6 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.net.URI
 
 plugins {
     kotlin("jvm") version "1.3.31"
@@ -17,15 +16,15 @@ repositories {
     mavenCentral()
     maven {
         name = "sponge"
-        url = URI("https://repo.spongepowered.org/maven/")
+        url = uri("https://repo.spongepowered.org/maven/")
     }
     maven {
         name = "jitpack"
-        url = URI("https://jitpack.io/")
+        url = uri("https://jitpack.io/")
     }
     maven {
         name = "bstats"
-        url = URI("https://repo.codemc.org/repository/maven-public")
+        url = uri("https://repo.codemc.org/repository/maven-public")
     }
 }
 
@@ -67,8 +66,40 @@ tasks.named<Task>("build") {
 
 publishing {
     publications {
-        create("plugin", MavenPublication::class.java) {
+        create("sponge", MavenPublication::class.java) {
             project.shadow.component(this)
+            pom {
+                name.set("MCMoji")
+                description.set("Emoji for Minecraft")
+                url.set("https://ore.spongepowered.org/pie_flavor/mcmoji")
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://github.com/pie-flavor/mcmoji/blob/master/LICENSE")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("pie_flavor")
+                        name.set("Adam Spofford")
+                        email.set("aspofford.as@gmail.com")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/pie-flavor/mcmoji.git")
+                    developerConnection.set("scm:git:ssh://github.com/pie-flavor/mcmoji.git")
+                    url.set("https://github.com/pie-flavor/mcmoji")
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url = uri("https://api.bintray.com/maven/pie-flavor/maven/mcmoji;publish=1")
+            credentials {
+                username = project.properties["bintrayUsername"].toString()
+                password = project.properties["bintrayApiKey"].toString()
+            }
         }
     }
 }
